@@ -22,9 +22,7 @@ __all__ = ['cqt', 'hybrid_cqt', 'pseudo_cqt']
 @cache
 def cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
         bins_per_octave=12, tuning=None, filter_scale=1,
-        aggregate=util.Deprecated(),
-        norm=1, sparsity=0.01, real=None,
-        resolution=util.Deprecated()):
+        norm=1, sparsity=0.01, real=util.Deprecated()):
     '''Compute the constant-Q transform of an audio signal.
 
     This implementation is based on the recursive sub-sampling method
@@ -63,10 +61,6 @@ def cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
         Filter scale factor. Small values (<1) use shorter windows
         for improved time resolution.
 
-    aggregate : [DEPRECATED]
-        .. warning:: This parameter was is deprecated in librosa 0.4.3.
-            It will be removed in librosa 0.5.0.
-
     norm : {inf, -inf, 0, float > 0}
         Type of norm to use for basis function normalization.
         See `librosa.util.normalize`.
@@ -77,13 +71,9 @@ def cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
 
         Set `sparsity=0` to disable sparsification.
 
-    real : bool
-        If true, return only the magnitude of the CQT.
-
-    resolution : float
-        .. warning:: This parameter name was deprecated in librosa 0.4.2
-            Use the `filter_scale` parameter instead.
-            The `resolution` parameter will be removed in librosa 0.5.0.
+    real : [DEPRECATED]
+        .. warning:: This parameter name deprecated in librosa 0.5.0
+            It will be removed in librosa 0.6.0.
 
 
     Returns
@@ -141,18 +131,6 @@ def cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
            [  2.034e-07,   4.245e-07, ...,   6.213e-08,   1.463e-07],
            [  4.896e-08,   5.407e-07, ...,   9.176e-08,   1.051e-07]])
     '''
-
-    filter_scale = util.rename_kw('resolution', resolution,
-                                  'filter_scale', filter_scale,
-                                  '0.4.2', '0.5.0')
-
-    if real is None:
-        warn('Real-valued CQT (real=True) is deprecated in 0.4.2. '
-             'Complex-valued CQT will become the default in 0.5.0. '
-             'Consider using np.abs(librosa.cqt(..., real=False)) '
-             'instead of real=True to maintain forward compatibility.',
-             DeprecationWarning)
-        real = True
 
     # How many octaves are we dealing with?
     n_octaves = int(np.ceil(float(n_bins) / bins_per_octave))
@@ -250,14 +228,13 @@ def cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
         cqt_resp.append(__cqt_response(my_y, n_fft, my_hop, fft_basis))
 
 
-    return __trim_stack(cqt_resp, n_bins, real)
+    return __trim_stack(cqt_resp, n_bins)
 
 
 @cache
 def hybrid_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
                bins_per_octave=12, tuning=None, filter_scale=1,
-               norm=1, sparsity=0.01,
-               resolution=util.Deprecated()):
+               norm=1, sparsity=0.01):
     '''Compute the hybrid constant-Q transform of an audio signal.
 
     Here, the hybrid CQT uses the pseudo CQT for higher frequencies where
@@ -298,12 +275,6 @@ def hybrid_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
 
         Set `sparsity=0` to disable sparsification.
 
-    resolution : float
-        .. warning:: This parameter name was deprecated in librosa 0.4.2
-            Use the `filter_scale` parameter instead.
-            The `resolution` parameter will be removed in librosa 0.5.0.
-
-
     Returns
     -------
     CQT : np.ndarray [shape=(n_bins, t), dtype=np.float]
@@ -322,10 +293,6 @@ def hybrid_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
     cqt
     pseudo_cqt
     '''
-
-    filter_scale = util.rename_kw('resolution', resolution,
-                                  'filter_scale', filter_scale,
-                                  '0.4.2', '0.5.0')
 
     if fmin is None:
         # C1 by default
@@ -376,17 +343,15 @@ def hybrid_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
                                    tuning=tuning,
                                    filter_scale=filter_scale,
                                    norm=norm,
-                                   sparsity=sparsity,
-                                   real=False)))
+                                   sparsity=sparsity)))
 
-    return __trim_stack(cqt_resp, n_bins, True)
+    return __trim_stack(cqt_resp, n_bins)
 
 
 @cache
 def pseudo_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
                bins_per_octave=12, tuning=None, filter_scale=1,
-               norm=1, sparsity=0.01,
-               resolution=util.Deprecated()):
+               norm=1, sparsity=0.01):
     '''Compute the pseudo constant-Q transform of an audio signal.
 
     This uses a single fft size that is the smallest power of 2 that is greater
@@ -429,11 +394,6 @@ def pseudo_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
 
         Set `sparsity=0` to disable sparsification.
 
-    resolution : float
-        .. warning:: This parameter name was deprecated in librosa 0.4.2
-            Use the `filter_scale` parameter instead.
-            The `resolution` parameter will be removed in librosa 0.5.0.
-
 
     Returns
     -------
@@ -448,10 +408,6 @@ def pseudo_cqt(y, sr=22050, hop_length=512, fmin=None, n_bins=84,
 
         Or if `y` is too short to support the frequency range of the CQT.
     '''
-
-    filter_scale = util.rename_kw('resolution', resolution,
-                                  'filter_scale', filter_scale,
-                                  '0.4.2', '0.5.0')
 
     if fmin is None:
         # C1 by default
@@ -506,7 +462,7 @@ def __cqt_filter_fft(sr, fmin, n_bins, bins_per_octave, tuning,
     return fft_basis, n_fft, lengths
 
 
-def __trim_stack(cqt_resp, n_bins, real):
+def __trim_stack(cqt_resp, n_bins):
     '''Helper function to trim and stack a collection of CQT responses'''
 
     # cleanup any framing errors at the boundaries
@@ -516,11 +472,7 @@ def __trim_stack(cqt_resp, n_bins, real):
 
     # Finally, clip out any bottom frequencies that we don't really want
     # Transpose magic here to ensure column-contiguity
-
-    C = np.ascontiguousarray(cqt_resp[-n_bins:].T).T
-    if real:
-        C = np.abs(C)
-    return C
+    return np.ascontiguousarray(cqt_resp[-n_bins:].T).T
 
 
 def __cqt_response(y, n_fft, hop_length, fft_basis):
