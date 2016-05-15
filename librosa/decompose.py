@@ -351,25 +351,25 @@ def hpss(S, kernel_size=31, power=2.0, mask=False, margin=1.0):
             return mask_harm, mask_perc
 
     else:
-        power_perc = perc ** power
-        zero_perc = (power_perc < util.SMALL_FLOAT)
-        power_perc[zero_perc] = 0.0
+        perc = perc ** power
+        zero_perc = (perc < util.SMALL_FLOAT)
+        perc[zero_perc] = 0.0
 
-        power_harm = harm ** power
-        zero_harm = (power_harm < util.SMALL_FLOAT)
-        power_harm[zero_harm] = 0.0
+        harm = harm ** power
+        zero_harm = (harm < util.SMALL_FLOAT)
+        harm[zero_harm] = 0.0
 
         # For margin==1, the residual component must be zero, so we split zeros evenly.
         if margin_harm == 1 and margin_perc == 1:
-            power_harm[zero_harm & zero_perc] = 0.5
-            power_perc[zero_harm & zero_perc] = 0.5
+            harm[zero_harm & zero_perc] = 0.5
+            perc[zero_harm & zero_perc] = 0.5
 
         # Compute harmonic mask
-        mask_harm = power_harm / (power_harm + power_perc * margin_harm**power)
+        mask_harm = harm / (harm + perc * margin_harm**power)
         mask_harm[np.isnan(mask_harm)] = 0
         
         # Compute percussive mask
-        mask_perc = power_perc / (power_perc + power_harm * margin_perc**power)
+        mask_perc = perc / (perc + harm * margin_perc**power)
         mask_harm[np.isnan(mask_perc)] = 0
 
     return ((S * mask_harm) * phase, (S * mask_perc) * phase)
